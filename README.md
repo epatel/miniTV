@@ -70,11 +70,14 @@ Ready-made Python scripts that push live data to the display:
 | `senders/macos-stats.py` | macOS system monitor — CPU, memory, temperature, network rates |
 | `senders/claude-usage.py` | Claude Code usage — tokens, messages, sessions, reset timer (reads local data, no API key needed) |
 | `senders/fear-and-greed.py` | Crypto Fear & Greed Index with color gauge |
+| `senders/winfidel.py` | [WInFiDEL](https://github.com/epatel/winfidel-sensor) filament diameter sensor — supports 1 or 2 sensors |
 
 ```bash
 python3 senders/macos-stats.py                    # system monitor
 python3 senders/claude-usage.py --plan max5       # Claude usage (pro/max5/max20)
 python3 senders/fear-and-greed.py                 # Fear & Greed Index
+python3 senders/winfidel.py --host winfidel.local # single sensor
+python3 senders/winfidel.py --host s1 --host s2   # dual sensors
 ```
 
 All senders auto-resolve `minitv.local` and only send updates when values change.
