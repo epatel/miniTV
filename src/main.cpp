@@ -7,6 +7,39 @@
 #include <ArduinoJson.h>
 #include <ESP8266mDNS.h>
 #include <WiFiManager.h>
+#include <EEPROM.h>
+
+// Hostname storage in EEPROM
+#define HOSTNAME_MAX 32
+#define EEPROM_SIZE 64
+#define EEPROM_MAGIC 0xAB  // byte 0: magic, bytes 1-32: hostname
+
+char hostname[HOSTNAME_MAX] = "minitv";
+
+void loadHostname() {
+  EEPROM.begin(EEPROM_SIZE);
+  if (EEPROM.read(0) == EEPROM_MAGIC) {
+    for (int i = 0; i < HOSTNAME_MAX - 1; i++) {
+      char c = EEPROM.read(1 + i);
+      hostname[i] = c;
+      if (c == '\0') break;
+    }
+    hostname[HOSTNAME_MAX - 1] = '\0';
+  }
+  EEPROM.end();
+}
+
+void saveHostname(const char* name) {
+  EEPROM.begin(EEPROM_SIZE);
+  EEPROM.write(0, EEPROM_MAGIC);
+  for (int i = 0; i < HOSTNAME_MAX - 1; i++) {
+    EEPROM.write(1 + i, name[i]);
+    if (name[i] == '\0') break;
+  }
+  EEPROM.write(HOSTNAME_MAX, '\0');
+  EEPROM.commit();
+  EEPROM.end();
+}
 
 // GeekMagic SmallTV pinout
 #define TFT_CS   -1
@@ -321,6 +354,7 @@ void handlePost() {
 void handleGet() {
   String json = "{";
   json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
+  json += "\"hostname\":\"" + String(hostname) + "\",";
   json += "\"display\":{\"width\":240,\"height\":240},";
   json += "\"uptime\":" + String(millis() / 1000);
   json += "}";
@@ -346,11 +380,23 @@ void setup() {
   tft.setRotation(2);
   tft.setSPISpeed(40000000);
 
-  // WiFiManager: auto-connects using saved credentials,
-  // or starts AP "miniTV-Setup" for configuration
+  // Load saved hostname from EEPROM
+  loadHostname();
+
+  // WiFiManager with custom hostname parameter
   showStatus("Connecting...");
   WiFiManager wm;
-  wm.setConfigPortalTimeout(180);  // 3 min timeout on config portal
+  WiFiManagerParameter hostnameParam("hostname", "Device name (mDNS)", hostname, HOSTNAME_MAX - 1);
+  wm.addParameter(&hostnameParam);
+  wm.setConfigPortalTimeout(180);
+
+  wm.setSaveParamsCallback([&hostnameParam]() {
+    strncpy(hostname, hostnameParam.getValue(), HOSTNAME_MAX - 1);
+    hostname[HOSTNAME_MAX - 1] = '\0';
+    saveHostname(hostname);
+    Serial.printf("Hostname saved: %s\n", hostname);
+  });
+
   if (!wm.autoConnect("miniTV-Setup")) {
     showStatus("WiFi failed");
     Serial.println("WiFi config portal timed out");
@@ -360,8 +406,8 @@ void setup() {
   Serial.println("WiFi connected");
   Serial.println(WiFi.localIP());
 
-  if (MDNS.begin("minitv")) {
-    Serial.println("mDNS: minitv.local");
+  if (MDNS.begin(hostname)) {
+    Serial.printf("mDNS: %s.local\n", hostname);
     MDNS.addService("http", "tcp", 80);
   }
 
@@ -380,14 +426,16 @@ void setup() {
   tft.fillScreen(ST77XX_BLACK);
   tft.setTextColor(ST77XX_GREEN);
   tft.setTextSize(2);
-  tft.setCursor(10, 80);
+  tft.setCursor(10, 70);
   tft.print("miniTV Ready");
   tft.setTextColor(ST77XX_WHITE);
   tft.setTextSize(1);
-  tft.setCursor(10, 110);
-  tft.print("POST /display");
-  tft.setCursor(10, 125);
+  tft.setCursor(10, 100);
   tft.print(WiFi.localIP());
+  tft.setCursor(10, 115);
+  tft.printf("%s.local", hostname);
+  tft.setCursor(10, 135);
+  tft.print("POST /display");
 }
 
 void loop() {

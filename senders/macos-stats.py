@@ -5,24 +5,11 @@ import subprocess
 import time
 import json
 import sys
+from minitv import resolve_url, send
 
 INTERVAL = 2  # seconds
 
-
-def resolve_url():
-    url = sys.argv[1] if len(sys.argv) > 1 else "http://minitv.local/display"
-    if "minitv.local" in url:
-        try:
-            import socket
-            ip = socket.getaddrinfo("minitv.local", 80, socket.AF_INET)[0][4][0]
-            url = url.replace("minitv.local", ip)
-            print(f"Resolved minitv.local -> {ip}")
-        except socket.gaierror:
-            print("Warning: could not resolve minitv.local, using as-is")
-    return url
-
-
-URL = resolve_url()
+URL = resolve_url(sys.argv[1] if len(sys.argv) > 1 else "http://minitv.local/display")
 
 
 def get_cpu_count():
@@ -116,18 +103,6 @@ def format_bytes(b):
     return f"{b}B"
 
 
-def send(payload):
-    data = json.dumps(payload)
-    try:
-        subprocess.run(
-            ["/usr/bin/curl", "-s", "-X", "POST", URL,
-             "-H", "Content-Type: application/json", "-d", "@-"],
-            input=data.encode(), timeout=5, capture_output=True
-        )
-    except Exception as e:
-        print(f"Send error: {e}")
-
-
 def bar_color(value):
     if value > 0.85:
         return "#FF4466"
@@ -219,7 +194,7 @@ def main():
         payload = {"bg": "#0A0A1A", "items": items}
         payload_json = json.dumps(payload, sort_keys=True)
         if payload_json != getattr(main, '_prev_payload', None):
-            send(payload)
+            send(URL, payload)
             main._prev_payload = payload_json
         time.sleep(INTERVAL)
 

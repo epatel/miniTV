@@ -9,10 +9,11 @@ Usage:
 import argparse
 import json
 import subprocess
-import socket
 import sys
 import time
 from datetime import datetime
+
+from minitv import resolve_url, resolve_host, send
 
 INTERVAL = 2  # seconds
 VERBOSE = False
@@ -25,26 +26,6 @@ NOMINAL = 1.75  # nominal filament diameter in mm
 TOLERANCE = 0.05  # +/- mm for "good" range
 
 
-def resolve_host(host):
-    if ".local" in host:
-        try:
-            ip = socket.getaddrinfo(host, 80, socket.AF_INET)[0][4][0]
-            log(f"Resolved {host} -> {ip}")
-            return ip
-        except socket.gaierror:
-            log(f"Warning: could not resolve {host}")
-    return host
-
-
-def resolve_url(url):
-    if "minitv.local" in url:
-        try:
-            ip = socket.getaddrinfo("minitv.local", 80, socket.AF_INET)[0][4][0]
-            url = url.replace("minitv.local", ip)
-            log(f"Resolved minitv.local -> {ip}")
-        except socket.gaierror:
-            pass
-    return url
 
 
 def fetch_diameter(host):
@@ -60,17 +41,6 @@ def fetch_diameter(host):
         log(f"Fetch error ({host}): {e}")
     return None
 
-
-def send(url, payload):
-    data = json.dumps(payload)
-    try:
-        subprocess.run(
-            ["/usr/bin/curl", "-s", "-X", "POST", url,
-             "-H", "Content-Type: application/json", "-d", "@-"],
-            input=data.encode(), timeout=5, capture_output=True
-        )
-    except Exception as e:
-        log(f"Send error: {e}")
 
 
 def diameter_color(value):

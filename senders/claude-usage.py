@@ -9,12 +9,12 @@ Usage: python3 claude-usage.py [--plan max5|pro|max20] [url]
 
 import argparse
 import json
-import subprocess
-import socket
 import sys
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
+from minitv import resolve_url, send
 
 INTERVAL = 30  # seconds
 
@@ -24,28 +24,6 @@ PLAN_LIMITS = {
     "max20": {"tokens": 220_000, "messages": 2_000},
 }
 
-
-def resolve_url(url):
-    if "minitv.local" in url:
-        try:
-            ip = socket.getaddrinfo("minitv.local", 80, socket.AF_INET)[0][4][0]
-            url = url.replace("minitv.local", ip)
-            print(f"Resolved minitv.local -> {ip}")
-        except socket.gaierror:
-            print("Warning: could not resolve minitv.local")
-    return url
-
-
-def send(url, payload):
-    data = json.dumps(payload)
-    try:
-        subprocess.run(
-            ["/usr/bin/curl", "-s", "-X", "POST", url,
-             "-H", "Content-Type: application/json", "-d", "@-"],
-            input=data.encode(), timeout=5, capture_output=True
-        )
-    except Exception as e:
-        print(f"Send error: {e}")
 
 
 def format_k(n):
