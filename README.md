@@ -1,3 +1,5 @@
+<a href="https://claude.ai"><img src="made-with-claude.png" height="32" alt="Made with Claude"></a>
+
 # miniTV
 
 A tiny HTTP-driven display server for the [GeekMagic SmallTV](https://github.com/GeekMagicClock) device — an ESP8266 (ESP-12F) with a 240x240 ST7789 TFT display.
