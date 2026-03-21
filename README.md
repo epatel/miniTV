@@ -61,6 +61,24 @@ See [API.md](API.md) for the full protocol reference.
 | POST | `/display` | Render items on display |
 | POST | `/reset-wifi` | Clear WiFi credentials, reboot into setup AP |
 
+## Senders
+
+Ready-made Python scripts that push live data to the display:
+
+| Script | Description |
+|--------|-------------|
+| `senders/macos-stats.py` | macOS system monitor — CPU, memory, temperature, network rates |
+| `senders/claude-usage.py` | Claude Code usage — tokens, messages, sessions, reset timer (reads local data, no API key needed) |
+| `senders/fear-and-greed.py` | Crypto Fear & Greed Index with color gauge |
+
+```bash
+python3 senders/macos-stats.py                    # system monitor
+python3 senders/claude-usage.py --plan max5       # Claude usage (pro/max5/max20)
+python3 senders/fear-and-greed.py                 # Fear & Greed Index
+```
+
+All senders auto-resolve `minitv.local` and only send updates when values change.
+
 ## Hardware
 
 - **MCU:** ESP8266 (ESP-12F)
