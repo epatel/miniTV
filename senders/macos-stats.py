@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """Send macOS system stats (CPU, memory, temperature, network) to miniTV display."""
 
+import argparse
 import subprocess
 import time
 import json
-import sys
-from minitv import resolve_url, send
+from minitv import add_display_args, display_from_args
 
 INTERVAL = 2  # seconds
-
-URL = resolve_url(sys.argv[1] if len(sys.argv) > 1 else "http://minitv.local/display")
 
 
 def get_cpu_count():
@@ -111,8 +109,8 @@ def bar_color(value):
     return "#44CC88"
 
 
-def main():
-    print(f"Sending macOS stats to {URL} every {INTERVAL}s (Ctrl+C to stop)")
+def main(display):
+    print(f"Sending macOS stats to {display} every {INTERVAL}s (Ctrl+C to stop)")
 
     prev_in, prev_out = get_network_bytes()
     prev_time = time.time()
@@ -194,10 +192,14 @@ def main():
         payload = {"bg": "#0A0A1A", "items": items}
         payload_json = json.dumps(payload, sort_keys=True)
         if payload_json != getattr(main, '_prev_payload', None):
-            send(URL, payload)
+            display.send(payload)
             main._prev_payload = payload_json
         time.sleep(INTERVAL)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Send macOS system stats to miniTV display")
+    add_display_args(parser)
+    args = parser.parse_args()
+    display = display_from_args(args)
+    main(display)

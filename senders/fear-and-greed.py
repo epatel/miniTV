@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Send Crypto Fear & Greed Index to miniTV display. Updates every 5 minutes."""
 
-import sys
-from minitv import resolve_url, fetch, run_loop
+import argparse
+from minitv import fetch, run_loop, add_display_args, display_from_args
 
 INTERVAL = 300  # 5 minutes
 API_URL = "https://api.alternative.me/fng/?limit=1"
@@ -76,6 +76,9 @@ def build(data):
 
 
 if __name__ == "__main__":
-    url = resolve_url(sys.argv[1] if len(sys.argv) > 1 else "http://minitv.local/display")
-    print(f"Fear & Greed -> {url} every {INTERVAL}s (Ctrl+C to stop)")
-    run_loop(url, collect, build, INTERVAL)
+    parser = argparse.ArgumentParser(description="Fear & Greed Index for miniTV")
+    add_display_args(parser)
+    args = parser.parse_args()
+    display = display_from_args(args)
+    print(f"Fear & Greed -> {display.describe()} every {INTERVAL}s (Ctrl+C to stop)")
+    run_loop(display, collect, build, INTERVAL)

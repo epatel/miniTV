@@ -1,55 +1,43 @@
 #!/bin/bash
-# miniTV Display Demo Script
-# Usage: ./demo.sh <device-ip>
-# Example: ./demo.sh 192.168.1.42
+# miniTV MQTT Display Demo
+# Usage: ./demo-mqtt.sh [device-name] [broker] [username] [password]
+# Example: ./demo-mqtt.sh minitv rpi4.memention.net myuser mypass
 
-HOST="${1:-minitv.local}"
+DEVICE="${1:-minitv}"
+BROKER="${2:-rpi4.memention.net}"
+USER="${3:-}"
+PASS="${4:-}"
+TOPIC="/$DEVICE/display"
 
-# Resolve .local hostname to IP for faster requests
-if [[ "$HOST" == *.local ]]; then
-  RESOLVED=$(python3 -c "import socket; print(socket.getaddrinfo('$HOST', 80, socket.AF_INET)[0][4][0])" 2>/dev/null)
-  if [ -n "$RESOLVED" ]; then
-    echo "Resolved $HOST -> $RESOLVED"
-    IP="$RESOLVED"
-  else
-    echo "Warning: could not resolve $HOST"
-    IP="$HOST"
-  fi
-else
-  IP="$HOST"
+AUTH=""
+if [ -n "$USER" ]; then
+  AUTH="-u $USER -P $PASS"
 fi
 
-URL="http://$IP/display"
-
-post() {
-  /usr/bin/curl -s -X POST "$URL" -H "Content-Type: application/json" -d "$1" > /dev/null
+pub() {
+  mosquitto_pub -h "$BROKER" $AUTH -t "$TOPIC" -m "$1"
   echo "  -> sent"
 }
 
-echo "=== miniTV Demo ==="
-echo "Target: $IP"
+echo "=== miniTV MQTT Demo ==="
+echo "Broker: $BROKER"
+echo "Topic: $TOPIC"
 echo ""
 
-# --- Test 1: Device info ---
-echo "[1] Device info (GET /)"
-/usr/bin/curl -s "http://$IP/" | python3 -m json.tool 2>/dev/null || /usr/bin/curl -s "http://$IP/"
-echo ""
-sleep 1
-
-# --- Test 2: Simple text ---
-echo "[2] Simple centered text"
-post '{
+# --- Test 1: Simple text ---
+echo "[1] Simple centered text"
+pub '{
   "bg": "#000000",
   "items": [
-    {"type": "text", "x": 120, "y": 100, "text": "Hello!", "size": 4, "color": "#00FF00", "align": "center"},
+    {"type": "text", "x": 120, "y": 100, "text": "Hello MQTT!", "size": 3, "color": "#00FF00", "align": "center"},
     {"type": "text", "x": 120, "y": 150, "text": "miniTV", "size": 2, "color": "#888888", "align": "center"}
   ]
 }'
 sleep 3
 
-# --- Test 3: Text alignment ---
-echo "[3] Text alignment (left, center, right)"
-post '{
+# --- Test 2: Text alignment ---
+echo "[2] Text alignment"
+pub '{
   "bg": "#000011",
   "items": [
     {"type": "text", "x": 10,  "y": 40,  "text": "Left",   "size": 2, "color": "#FF0000"},
@@ -60,9 +48,9 @@ post '{
 }'
 sleep 3
 
-# --- Test 4: Progress bars ---
-echo "[4] Multiple progress bars"
-post '{
+# --- Test 3: Progress bars ---
+echo "[3] Multiple progress bars"
+pub '{
   "bg": "#000000",
   "items": [
     {"type": "text", "x": 10, "y": 10, "text": "Downloads", "size": 2, "color": "#FFFFFF"},
@@ -83,26 +71,9 @@ post '{
 }'
 sleep 3
 
-# --- Test 5: Shapes ---
-echo "[5] Shapes demo"
-post '{
-  "bg": "#000000",
-  "items": [
-    {"type": "rect", "x": 10, "y": 10, "w": 220, "h": 220, "color": "#333333"},
-    {"type": "rect", "x": 30, "y": 30, "w": 60, "h": 60, "color": "#FF0000", "fill": true},
-    {"type": "rect", "x": 150, "y": 30, "w": 60, "h": 60, "color": "#0000FF", "fill": true},
-    {"type": "circle", "x": 60, "y": 170, "r": 30, "color": "#00FF00", "fill": true},
-    {"type": "circle", "x": 180, "y": 170, "r": 30, "color": "#FF00FF", "fill": true},
-    {"type": "circle", "x": 120, "y": 120, "r": 25, "color": "#FFFF00", "fill": true},
-    {"type": "line", "x1": 10, "y1": 10, "x2": 230, "y2": 230, "color": "#FFFFFF"},
-    {"type": "line", "x1": 230, "y1": 10, "x2": 10, "y2": 230, "color": "#FFFFFF"}
-  ]
-}'
-sleep 3
-
-# --- Test 6: Dashboard ---
-echo "[6] Dashboard layout"
-post '{
+# --- Test 4: Dashboard ---
+echo "[4] Dashboard layout"
+pub '{
   "bg": "#0A0A1A",
   "items": [
     {"type": "rect", "x": 0, "y": 0, "w": 240, "h": 30, "color": "#1A1A3A", "fill": true},
@@ -125,22 +96,17 @@ post '{
     {"type": "text", "x": 10,  "y": 150, "text": "Temp:", "size": 1, "color": "#888888"},
     {"type": "text", "x": 100, "y": 150, "text": "58C",  "size": 1, "color": "#FFAA00"},
     {"type": "text", "x": 10,  "y": 165, "text": "Load:", "size": 1, "color": "#888888"},
-    {"type": "text", "x": 100, "y": 165, "text": "2.4",  "size": 1, "color": "#44CC88"},
-    {"type": "text", "x": 10,  "y": 180, "text": "Net:",  "size": 1, "color": "#888888"},
-    {"type": "text", "x": 100, "y": 180, "text": "12Mbps", "size": 1, "color": "#4488FF"},
-
-    {"type": "circle", "x": 200, "y": 170, "r": 6, "color": "#00FF00", "fill": true},
-    {"type": "text", "x": 190, "y": 190, "text": "OK", "size": 1, "color": "#00FF00"}
+    {"type": "text", "x": 100, "y": 165, "text": "2.4",  "size": 1, "color": "#44CC88"}
   ]
 }'
 sleep 3
 
-# --- Test 7: Animated progress ---
-echo "[7] Animated progress (0-100%)"
+# --- Test 5: Animated progress ---
+echo "[5] Animated progress (0-100%)"
 for i in $(seq 0 5 100); do
   val=$(echo "scale=2; $i/100" | bc)
   printf "\r  Progress: %3d%%" "$i"
-  post '{
+  pub '{
     "bg": "#000000",
     "items": [
       {"type": "text", "x": 120, "y": 60, "text": "Installing...", "size": 2, "color": "#FFFFFF", "align": "center"},
@@ -148,13 +114,14 @@ for i in $(seq 0 5 100); do
       {"type": "text", "x": 120, "y": 145, "text": "'"$i"'%", "size": 2, "color": "#FFFFFF", "align": "center", "maxWidth": "100%"}
     ]
   }' 2>/dev/null
+  sleep 1
 done
 echo ""
 sleep 2
 
 # --- Done ---
-echo "[8] Done - showing ready screen"
-post '{
+echo "[6] Done"
+pub '{
   "bg": "#001100",
   "items": [
     {"type": "circle", "x": 120, "y": 100, "r": 40, "color": "#00FF00"},

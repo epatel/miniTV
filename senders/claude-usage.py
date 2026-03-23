@@ -4,7 +4,7 @@
 Reads local JSONL files from ~/.claude/projects/ — no API calls needed.
 Based on geekmagic-stats/claude_monitor.py collection logic.
 
-Usage: python3 claude-usage.py [--plan max5|pro|max20] [url]
+Usage: python3 claude-usage.py [--plan max5|pro|max20] [--mqtt host] [url]
 """
 
 import argparse
@@ -14,7 +14,7 @@ import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-from minitv import resolve_url, send
+from minitv import send, add_display_args, display_from_args
 
 INTERVAL = 30  # seconds
 
@@ -253,19 +253,19 @@ def fingerprint(usage):
 def main():
     parser = argparse.ArgumentParser(description="Claude Code usage monitor for miniTV")
     parser.add_argument("--plan", choices=PLAN_LIMITS.keys(), default="max5")
-    parser.add_argument("url", nargs="?", default="http://minitv.local/display")
+    add_display_args(parser)
     args = parser.parse_args()
 
-    url = resolve_url(args.url)
-    print(f"Plan: {args.plan} | Target: {url} | Interval: {INTERVAL}s (Ctrl+C to stop)")
+    display = display_from_args(args)
+    print(f"Plan: {args.plan} | Target: {display.describe()} | Interval: {INTERVAL}s (Ctrl+C to stop)")
 
-    prev_fp = None
+    prev_fp = "INITIAL"  # ensure first send always happens
     while True:
         usage = collect_usage(args.plan)
         fp = fingerprint(usage)
         if fp != prev_fp:
             payload = build_display(usage, args.plan)
-            send(url, payload)
+            display.send(payload)
             prev_fp = fp
             if usage:
                 print(f"Tokens: {usage['tokens_pct']:.0f}% | Msgs: {usage['messages_used']}/{usage['messages_limit']} | Reset: {format_duration(usage['reset_min'])}")

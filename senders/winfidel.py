@@ -13,7 +13,7 @@ import sys
 import time
 from datetime import datetime
 
-from minitv import resolve_url, resolve_host, send
+from minitv import resolve_host, add_display_args, display_from_args
 
 INTERVAL = 2  # seconds
 VERBOSE = False
@@ -200,7 +200,7 @@ def main():
     parser.add_argument("--host", action="append", required=True,
                         help="WInFiDEL sensor IP or hostname (can specify twice)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
-    parser.add_argument("url", nargs="?", default="http://minitv.local/display")
+    add_display_args(parser)
     args = parser.parse_args()
 
     global VERBOSE
@@ -212,8 +212,8 @@ def main():
 
     hosts = [resolve_host(h) for h in args.host]
     labels = [args.host[i].split(".")[0].upper() for i in range(len(args.host))]
-    url = resolve_url(args.url)
-    log(f"Sensors: {', '.join(hosts)} | Display: {url} | Interval: {INTERVAL}s (Ctrl+C to stop)")
+    display = display_from_args(args)
+    log(f"Sensors: {', '.join(hosts)} | Display: {display.describe()} | Interval: {INTERVAL}s (Ctrl+C to stop)")
 
     prev_fp = None
     while True:
@@ -221,7 +221,7 @@ def main():
         fp = fingerprint(readings)
         if fp != prev_fp:
             payload = build_display(readings, labels)
-            send(url, payload)
+            display.send(payload)
             prev_fp = fp
             for i, data in enumerate(readings):
                 if data:

@@ -8,15 +8,31 @@
 #include <ESP8266mDNS.h>
 #include <WiFiManager.h>
 #include <EEPROM.h>
+#include <PubSubClient.h>
 
-// Hostname storage in EEPROM
+// EEPROM layout: config storage
 #define HOSTNAME_MAX 32
-#define EEPROM_SIZE 64
-#define EEPROM_MAGIC 0xAB  // byte 0: magic, bytes 1-32: hostname
+#define MQTT_HOST_MAX 64
+#define MQTT_PORT_MAX 6
+#define MQTT_USER_MAX 32
+#define MQTT_PASS_MAX 32
+#define EEPROM_SIZE 256
+#define EEPROM_MAGIC 0xAD  // bump magic to reset old configs
+
+// byte 0: magic
+// bytes 1-32: hostname
+// bytes 33-96: mqtt_host
+// bytes 97-102: mqtt_port
+// bytes 103-134: mqtt_user
+// bytes 135-166: mqtt_pass
 
 char hostname[HOSTNAME_MAX] = "minitv";
+char mqtt_host[MQTT_HOST_MAX] = "";
+char mqtt_port_str[MQTT_PORT_MAX] = "1883";
+char mqtt_user[MQTT_USER_MAX] = "";
+char mqtt_pass[MQTT_PASS_MAX] = "";
 
-void loadHostname() {
+void loadConfig() {
   EEPROM.begin(EEPROM_SIZE);
   if (EEPROM.read(0) == EEPROM_MAGIC) {
     for (int i = 0; i < HOSTNAME_MAX - 1; i++) {
@@ -25,18 +41,42 @@ void loadHostname() {
       if (c == '\0') break;
     }
     hostname[HOSTNAME_MAX - 1] = '\0';
+    for (int i = 0; i < MQTT_HOST_MAX - 1; i++) {
+      char c = EEPROM.read(33 + i);
+      mqtt_host[i] = c;
+      if (c == '\0') break;
+    }
+    mqtt_host[MQTT_HOST_MAX - 1] = '\0';
+    for (int i = 0; i < MQTT_PORT_MAX - 1; i++) {
+      char c = EEPROM.read(97 + i);
+      mqtt_port_str[i] = c;
+      if (c == '\0') break;
+    }
+    mqtt_port_str[MQTT_PORT_MAX - 1] = '\0';
+    for (int i = 0; i < MQTT_USER_MAX - 1; i++) {
+      char c = EEPROM.read(103 + i);
+      mqtt_user[i] = c;
+      if (c == '\0') break;
+    }
+    mqtt_user[MQTT_USER_MAX - 1] = '\0';
+    for (int i = 0; i < MQTT_PASS_MAX - 1; i++) {
+      char c = EEPROM.read(135 + i);
+      mqtt_pass[i] = c;
+      if (c == '\0') break;
+    }
+    mqtt_pass[MQTT_PASS_MAX - 1] = '\0';
   }
   EEPROM.end();
 }
 
-void saveHostname(const char* name) {
+void saveConfig() {
   EEPROM.begin(EEPROM_SIZE);
   EEPROM.write(0, EEPROM_MAGIC);
-  for (int i = 0; i < HOSTNAME_MAX - 1; i++) {
-    EEPROM.write(1 + i, name[i]);
-    if (name[i] == '\0') break;
-  }
-  EEPROM.write(HOSTNAME_MAX, '\0');
+  for (int i = 0; i < HOSTNAME_MAX; i++) EEPROM.write(1 + i, hostname[i]);
+  for (int i = 0; i < MQTT_HOST_MAX; i++) EEPROM.write(33 + i, mqtt_host[i]);
+  for (int i = 0; i < MQTT_PORT_MAX; i++) EEPROM.write(97 + i, mqtt_port_str[i]);
+  for (int i = 0; i < MQTT_USER_MAX; i++) EEPROM.write(103 + i, mqtt_user[i]);
+  for (int i = 0; i < MQTT_PASS_MAX; i++) EEPROM.write(135 + i, mqtt_pass[i]);
   EEPROM.commit();
   EEPROM.end();
 }
@@ -49,6 +89,12 @@ void saveHostname(const char* name) {
 
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 ESP8266WebServer server(80);
+WiFiClient mqttWifiClient;
+PubSubClient mqtt(mqttWifiClient);
+unsigned long lastMqttReconnect = 0;
+bool mqttEnabled = false;
+bool mqttWasConnected = false;
+bool mqttShowingStatus = true;  // show status until first message arrives
 
 // --- Draw list ---
 
@@ -329,6 +375,83 @@ void renderDrawList() {
 
 // --- HTTP handlers ---
 
+// --- MQTT ---
+
+void mqttCallback(char* topic, byte* payload, unsigned int length) {
+  // Parse JSON and queue for rendering — same format as POST /display
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, payload, length);
+  if (err) {
+    Serial.printf("MQTT JSON error: %s\n", err.c_str());
+    return;
+  }
+  parseDrawList(doc);
+  drawPending = true;
+  mqttShowingStatus = false;
+  Serial.println("MQTT: display updated");
+}
+
+void showMqttStatus(bool connected) {
+  tft.fillScreen(ST77XX_BLACK);
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextSize(2);
+  tft.setCursor(10, 30);
+  tft.print("MQTT");
+  tft.setTextSize(1);
+  tft.setCursor(10, 55);
+  tft.printf("Broker: %s:%s", mqtt_host, mqtt_port_str);
+  tft.setCursor(10, 70);
+  tft.printf("Topic: /%s/display", hostname);
+  if (connected) {
+    tft.setTextColor(ST77XX_GREEN);
+    tft.setTextSize(2);
+    tft.setCursor(10, 100);
+    tft.print("Connected");
+    tft.setTextColor(ST77XX_WHITE);
+    tft.setTextSize(1);
+    tft.setCursor(10, 125);
+    tft.print("Waiting for data...");
+  } else {
+    tft.setTextColor(ST77XX_RED);
+    tft.setTextSize(2);
+    tft.setCursor(10, 100);
+    tft.print("Disconnected");
+    tft.setTextColor(ST77XX_WHITE);
+    tft.setTextSize(1);
+    tft.setCursor(10, 125);
+    tft.print("Reconnecting...");
+  }
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextSize(1);
+  tft.setCursor(10, 155);
+  tft.print(WiFi.localIP());
+  tft.setCursor(10, 170);
+  tft.printf("%s.local", hostname);
+}
+
+void connectMqtt() {
+  if (!mqttEnabled || mqtt.connected()) return;
+
+  String clientId = String(hostname) + "-" + String(ESP.getChipId(), HEX);
+  Serial.printf("MQTT connecting to %s:%s as %s...\n", mqtt_host, mqtt_port_str, clientId.c_str());
+
+  bool connected;
+  if (strlen(mqtt_user) > 0) {
+    connected = mqtt.connect(clientId.c_str(), mqtt_user, mqtt_pass);
+  } else {
+    connected = mqtt.connect(clientId.c_str());
+  }
+  if (connected) {
+    String topic = String("/") + hostname + "/display";
+    mqtt.subscribe(topic.c_str(), 0);  // QoS 0 — drop old messages
+    Serial.printf("MQTT subscribed: %s\n", topic.c_str());
+  } else {
+    Serial.printf("MQTT connect failed, rc=%d\n", mqtt.state());
+  }
+}
+
+// --- HTTP handlers ---
+
 void handlePost() {
   if (!server.hasArg("plain")) {
     server.send(400, "application/json", "{\"error\":\"no body\"}");
@@ -380,21 +503,75 @@ void setup() {
   tft.setRotation(2);
   tft.setSPISpeed(40000000);
 
-  // Load saved hostname from EEPROM
-  loadHostname();
+  // Load saved config from EEPROM
+  loadConfig();
 
-  // WiFiManager with custom hostname parameter
-  showStatus("Connecting...");
+  // Show connecting with saved SSID if available
+  String savedSSID = WiFi.SSID();
+  if (savedSSID.length() > 0) {
+    tft.fillScreen(ST77XX_BLACK);
+    tft.setTextColor(ST77XX_WHITE);
+    tft.setTextSize(2);
+    tft.setCursor(10, 90);
+    tft.print("Connecting...");
+    tft.setTextSize(1);
+    tft.setCursor(10, 115);
+    tft.print(savedSSID);
+  } else {
+    showStatus("Connecting...");
+  }
   WiFiManager wm;
   WiFiManagerParameter hostnameParam("hostname", "Device name (mDNS)", hostname, HOSTNAME_MAX - 1);
+  WiFiManagerParameter mqttHostParam("mqtt_host", "MQTT broker (optional)", mqtt_host, MQTT_HOST_MAX - 1);
+  WiFiManagerParameter mqttPortParam("mqtt_port", "MQTT port", mqtt_port_str, MQTT_PORT_MAX - 1);
+  WiFiManagerParameter mqttUserParam("mqtt_user", "MQTT username (optional)", mqtt_user, MQTT_USER_MAX - 1);
+  WiFiManagerParameter mqttPassParam("mqtt_pass", "MQTT password (optional)", mqtt_pass, MQTT_PASS_MAX - 1);
   wm.addParameter(&hostnameParam);
-  wm.setConfigPortalTimeout(180);
+  wm.addParameter(&mqttHostParam);
+  wm.addParameter(&mqttPortParam);
+  wm.addParameter(&mqttUserParam);
+  wm.addParameter(&mqttPassParam);
+  wm.setShowInfoUpdate(false);
+  const char* menu[] = {"wifi", "param", "info", "exit"};
+  wm.setMenu(menu, 4);
+  wm.setConnectTimeout(15);
+  wm.setConnectRetries(3);        // 3 retries x 15s = ~45s total       // 30s to connect to saved WiFi
+  wm.setConfigPortalTimeout(180);  // 3 min for config portal
 
-  wm.setSaveParamsCallback([&hostnameParam]() {
+  wm.setAPCallback([](WiFiManager*) {
+    tft.fillScreen(ST77XX_BLACK);
+    tft.setTextColor(ST77XX_YELLOW);
+    tft.setTextSize(2);
+    tft.setCursor(10, 50);
+    tft.print("WiFi Setup");
+    tft.setTextColor(ST77XX_WHITE);
+    tft.setTextSize(1);
+    tft.setCursor(10, 80);
+    tft.print("Connect to WiFi:");
+    tft.setTextColor(ST77XX_GREEN);
+    tft.setCursor(10, 95);
+    tft.print("miniTV-Setup");
+    tft.setTextColor(ST77XX_WHITE);
+    tft.setCursor(10, 115);
+    tft.print("Then open browser to");
+    tft.setCursor(10, 130);
+    tft.print("configure network.");
+    Serial.println("AP mode: miniTV-Setup");
+  });
+
+  wm.setSaveParamsCallback([&hostnameParam, &mqttHostParam, &mqttPortParam, &mqttUserParam, &mqttPassParam]() {
     strncpy(hostname, hostnameParam.getValue(), HOSTNAME_MAX - 1);
     hostname[HOSTNAME_MAX - 1] = '\0';
-    saveHostname(hostname);
-    Serial.printf("Hostname saved: %s\n", hostname);
+    strncpy(mqtt_host, mqttHostParam.getValue(), MQTT_HOST_MAX - 1);
+    mqtt_host[MQTT_HOST_MAX - 1] = '\0';
+    strncpy(mqtt_port_str, mqttPortParam.getValue(), MQTT_PORT_MAX - 1);
+    mqtt_port_str[MQTT_PORT_MAX - 1] = '\0';
+    strncpy(mqtt_user, mqttUserParam.getValue(), MQTT_USER_MAX - 1);
+    mqtt_user[MQTT_USER_MAX - 1] = '\0';
+    strncpy(mqtt_pass, mqttPassParam.getValue(), MQTT_PASS_MAX - 1);
+    mqtt_pass[MQTT_PASS_MAX - 1] = '\0';
+    saveConfig();
+    Serial.printf("Config saved: hostname=%s mqtt=%s:%s user=%s\n", hostname, mqtt_host, mqtt_port_str, mqtt_user);
   });
 
   if (!wm.autoConnect("miniTV-Setup")) {
@@ -411,6 +588,18 @@ void setup() {
     MDNS.addService("http", "tcp", 80);
   }
 
+  // Setup MQTT if broker configured
+  if (strlen(mqtt_host) > 0) {
+    mqttEnabled = true;
+    int port = atoi(mqtt_port_str);
+    if (port == 0) port = 1883;
+    mqtt.setServer(mqtt_host, port);
+    mqtt.setCallback(mqttCallback);
+    mqtt.setBufferSize(4096);  // allow large JSON payloads
+    connectMqtt();
+    Serial.printf("MQTT enabled: %s:%d topic=/%s/display\n", mqtt_host, port, hostname);
+  }
+
   server.on("/", HTTP_GET, handleGet);
   server.on("/display", HTTP_POST, handlePost);
   server.on("/reset-wifi", HTTP_POST, []() {
@@ -423,24 +612,66 @@ void setup() {
   server.begin();
   Serial.println("HTTP server started on port 80");
 
-  tft.fillScreen(ST77XX_BLACK);
-  tft.setTextColor(ST77XX_GREEN);
-  tft.setTextSize(2);
-  tft.setCursor(10, 70);
-  tft.print("miniTV Ready");
-  tft.setTextColor(ST77XX_WHITE);
-  tft.setTextSize(1);
-  tft.setCursor(10, 100);
-  tft.print(WiFi.localIP());
-  tft.setCursor(10, 115);
-  tft.printf("%s.local", hostname);
-  tft.setCursor(10, 135);
-  tft.print("POST /display");
+  if (mqttEnabled) {
+    showMqttStatus(mqtt.connected());
+    mqttWasConnected = mqtt.connected();
+  } else {
+    tft.fillScreen(ST77XX_BLACK);
+    tft.setTextColor(ST77XX_GREEN);
+    tft.setTextSize(2);
+    tft.setCursor(10, 70);
+    tft.print("miniTV Ready");
+    tft.setTextColor(ST77XX_WHITE);
+    tft.setTextSize(1);
+    tft.setCursor(10, 100);
+    tft.print(WiFi.localIP());
+    tft.setCursor(10, 115);
+    tft.printf("%s.local", hostname);
+    tft.setCursor(10, 135);
+    tft.print("POST /display");
+  }
 }
 
 void loop() {
   MDNS.update();
   server.handleClient();
+
+  // MQTT: reconnect if needed, process messages
+  if (mqttEnabled) {
+    bool isConnected = mqtt.connected();
+    if (!isConnected) {
+      unsigned long now = millis();
+      if (now - lastMqttReconnect > 5000) {
+        lastMqttReconnect = now;
+        connectMqtt();
+        isConnected = mqtt.connected();
+      }
+    }
+    // Update status display on connection state change
+    if (isConnected != mqttWasConnected) {
+      if (!isConnected || mqttShowingStatus) {
+        // Always show disconnect; show connect only if no content displayed yet
+        showMqttStatus(isConnected);
+      }
+      mqttWasConnected = isConnected;
+    }
+    // Drain all queued MQTT messages, only render the last one
+    drawPending = false;
+    mqtt.loop();
+    // If messages arrived, drain any remaining in the buffer
+    if (drawPending) {
+      for (int i = 0; i < 10; i++) {
+        bool prevPending = drawPending;
+        drawPending = false;
+        mqtt.loop();
+        if (!drawPending) {
+          drawPending = prevPending;
+          break;
+        }
+        yield();
+      }
+    }
+  }
 
   if (drawPending) {
     drawPending = false;
