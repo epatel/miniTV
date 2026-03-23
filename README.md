@@ -2,9 +2,9 @@
 
 # miniTV
 
-A tiny HTTP-driven display server for the [GeekMagic SmallTV](https://github.com/GeekMagicClock) device — an ESP8266 (ESP-12F) with a 240x240 ST7789 TFT display.
+A tiny display server for the [GeekMagic SmallTV](https://github.com/GeekMagicClock) device — an ESP8266 (ESP-12F) with a 240x240 ST7789 TFT display.
 
-Send JSON over HTTP to show text, progress bars, shapes, and lines on the screen.
+Send JSON over **HTTP** or **MQTT** to show text, progress bars, shapes, and lines on the screen.
 
 ## Quick Start
 
@@ -13,9 +13,14 @@ Send JSON over HTTP to show text, progress bars, shapes, and lines on the screen
    pio run -t upload
    ```
 
-2. **Connect to WiFi:** On first boot the device creates an AP called **miniTV-Setup**. Connect to it and use the captive portal to select your WiFi network.
+2. **Connect to WiFi:** On first boot the device creates an AP called **miniTV-Setup**. Connect to it and use the captive portal to configure:
+   - WiFi network
+   - Device name (mDNS hostname, default: `minitv`)
+   - MQTT broker, port, username, password (optional)
 
 3. **Send something to the display:**
+
+   Via HTTP:
    ```bash
    curl -X POST http://minitv.local/display \
      -H "Content-Type: application/json" -d '{
@@ -26,14 +31,25 @@ Send JSON over HTTP to show text, progress bars, shapes, and lines on the screen
    }'
    ```
 
+   Via MQTT:
+   ```bash
+   mosquitto_pub -h broker.example.com -t /minitv/display -m '{
+     "bg": "#000000",
+     "items": [
+       {"type": "text", "x": 120, "y": 100, "text": "Hello!", "size": 3, "color": "#00FF00", "align": "center"}
+     ]
+   }'
+   ```
+
 4. **Run the demo:**
    ```bash
-   ./demo.sh
+   ./demo.sh                                          # HTTP demo
+   ./demo-mqtt.sh minitv broker.example.com user pass  # MQTT demo
    ```
 
 ## Display Protocol
 
-POST JSON to `/display` with a background color and a list of draw items:
+POST JSON to `/display` (HTTP) or publish to `/<device-name>/display` (MQTT):
 
 ```json
 {
@@ -57,13 +73,13 @@ See [API.md](API.md) for the full protocol reference.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/` | Device info (IP, display size, uptime) |
+| GET | `/` | Device info (IP, hostname, display size, uptime) |
 | POST | `/display` | Render items on display |
-| POST | `/reset-wifi` | Clear WiFi credentials, reboot into setup AP |
+| POST | `/reset-wifi` | Clear WiFi and MQTT credentials, reboot into setup AP |
 
 ## Senders
 
-Ready-made Python scripts that push live data to the display:
+Ready-made Python scripts that push live data to the display. All senders support both HTTP and MQTT:
 
 | Script | Description |
 |--------|-------------|
@@ -73,14 +89,22 @@ Ready-made Python scripts that push live data to the display:
 | `senders/winfidel.py` | [WInFiDEL](https://github.com/epatel/winfidel-sensor) filament diameter sensor — supports 1 or 2 sensors |
 
 ```bash
-python3 senders/macos-stats.py                    # system monitor
-python3 senders/claude-usage.py --plan max5       # Claude usage (pro/max5/max20)
-python3 senders/fear-and-greed.py                 # Fear & Greed Index
-python3 senders/winfidel.py --host winfidel.local # single sensor
-python3 senders/winfidel.py --host s1 --host s2   # dual sensors
+# HTTP (default)
+python3 senders/macos-stats.py
+python3 senders/macos-stats.py http://minitv2.local/display
+
+# MQTT
+python3 senders/macos-stats.py --mqtt-broker rpi4.example.com --mqtt-device minitv
+python3 senders/macos-stats.py --mqtt-broker rpi4.example.com --mqtt-device minitv --mqtt-user user --mqtt-pass pass
+
+# Other senders
+python3 senders/claude-usage.py --plan max5
+python3 senders/fear-and-greed.py
+python3 senders/winfidel.py --host winfidel.local
+python3 senders/winfidel.py --host s1 --host s2
 ```
 
-All senders auto-resolve `minitv.local` and only send updates when values change.
+All senders auto-resolve `.local` hostnames and only send updates when values change.
 
 ## Hardware
 
