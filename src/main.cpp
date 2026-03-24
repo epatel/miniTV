@@ -10,6 +10,48 @@
 #include <EEPROM.h>
 #include <PubSubClient.h>
 
+// Adafruit GFX custom fonts
+#include <Fonts/FreeSans9pt7b.h>
+#include <Fonts/FreeSans12pt7b.h>
+#include <Fonts/FreeSans18pt7b.h>
+#include <Fonts/FreeMono12pt7b.h>
+#include <Fonts/FreeMono18pt7b.h>
+#include <Fonts/FreeSerif12pt7b.h>
+#include <Fonts/FreeSerif18pt7b.h>
+
+// Font lookup table — in RAM (only ~56 bytes; PROGMEM would require pgm_read_ptr for pointers)
+struct FontEntry {
+  const char* name;
+  const GFXfont* font;
+};
+
+#define FONT_COUNT 7
+
+const FontEntry fontTable[FONT_COUNT] = {
+  {"sans-9",   &FreeSans9pt7b},
+  {"sans-12",  &FreeSans12pt7b},
+  {"sans-18",  &FreeSans18pt7b},
+  {"mono-12",  &FreeMono12pt7b},
+  {"mono-18",  &FreeMono18pt7b},
+  {"serif-12", &FreeSerif12pt7b},
+  {"serif-18", &FreeSerif18pt7b},
+};
+
+// Resolve font name to fontId (1-based index into fontTable, 0 = built-in)
+uint8_t lookupFontId(const char* name) {
+  if (!name || name[0] == '\0') return 0;
+  for (uint8_t i = 0; i < FONT_COUNT; i++) {
+    if (strcmp(name, fontTable[i].name) == 0) return i + 1;
+  }
+  return 0;  // unknown font → fall back to built-in
+}
+
+// Get GFXfont pointer from fontId (NULL = built-in)
+const GFXfont* getFontPtr(uint8_t fontId) {
+  if (fontId == 0 || fontId > FONT_COUNT) return NULL;
+  return fontTable[fontId - 1].font;
+}
+
 // EEPROM layout: config storage
 #define HOSTNAME_MAX 32
 #define MQTT_HOST_MAX 64
