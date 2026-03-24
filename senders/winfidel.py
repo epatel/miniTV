@@ -146,12 +146,12 @@ def sensor_items_dual(data, label, y_off):
          "value": bar_val, "color": color, "bg": "#282832", "border": "#282832"},
 
         # Min / Avg / Max in a row
-        {"type": "text", "x": 14, "y": y_off + 72, "text": f"Min:{d_min:.3f}", "font": "sans-9",
-         "color": diameter_color(d_min), "maxWidth": "Min:0.000"},
-        {"type": "text", "x": 120, "y": y_off + 72, "text": f"Avg:{d_avg:.3f}", "font": "sans-9",
-         "color": diameter_color(d_avg), "align": "center", "maxWidth": "Avg:0.000"},
-        {"type": "text", "x": 226, "y": y_off + 72, "text": f"Max:{d_max:.3f}", "font": "sans-9",
-         "color": diameter_color(d_max), "align": "right", "maxWidth": "Max:0.000"},
+        {"type": "text", "x": 2, "y": y_off + 72, "text": f"{d_min:.3f}", "font": "sans-9",
+         "color": diameter_color(d_min), "maxWidth": "0.000"},
+        {"type": "text", "x": 120, "y": y_off + 72, "text": f"{d_avg:.3f}", "font": "sans-9",
+         "color": diameter_color(d_avg), "align": "center", "maxWidth": "0.000"},
+        {"type": "text", "x": 238, "y": y_off + 72, "text": f"{d_max:.3f}", "font": "sans-9",
+         "color": diameter_color(d_max), "align": "right", "maxWidth": "0.000"},
     ]
     return items
 
