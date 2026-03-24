@@ -156,7 +156,7 @@ struct DrawCmd {
   int16_t x, y;
   uint16_t color;
   union {
-    struct { char text[MAX_TEXT_LEN]; uint8_t size; Align align; uint16_t fixedW; } t;
+    struct { char text[MAX_TEXT_LEN]; uint8_t size; Align align; uint16_t fixedW; uint8_t fontId; } t;
     struct { int16_t w, h; uint16_t bg, border; float value; } p;
     struct { int16_t w, h; bool fill; } r;
     struct { int16_t x2, y2; } l;
@@ -173,6 +173,7 @@ volatile bool drawPending = false;
 struct LayoutKey {
   CmdType type;
   int16_t x, y, w, h;
+  uint8_t fontId;
 };
 
 LayoutKey prevLayout[MAX_CMDS];
@@ -307,18 +308,18 @@ LayoutKey computeLayoutKey(DrawCmd& cmd) {
     case CMD_TEXT: {
       int16_t cx, cy; uint16_t tw, th;
       getTextPos(cmd, cx, cy, tw, th);
-      return {cmd.type, cx, cy, (int16_t)tw, (int16_t)th};
+      return {cmd.type, cx, cy, (int16_t)tw, (int16_t)th, cmd.t.fontId};
     }
     case CMD_PROGRESS:
-      return {cmd.type, cmd.x, cmd.y, cmd.p.w, cmd.p.h};
+      return {cmd.type, cmd.x, cmd.y, cmd.p.w, cmd.p.h, 0};
     case CMD_RECT:
-      return {cmd.type, cmd.x, cmd.y, cmd.r.w, cmd.r.h};
+      return {cmd.type, cmd.x, cmd.y, cmd.r.w, cmd.r.h, 0};
     case CMD_LINE:
-      return {cmd.type, cmd.x, cmd.y, cmd.l.x2, cmd.l.y2};
+      return {cmd.type, cmd.x, cmd.y, cmd.l.x2, cmd.l.y2, 0};
     case CMD_CIRCLE:
-      return {cmd.type, cmd.x, cmd.y, cmd.c.r, 0};
+      return {cmd.type, cmd.x, cmd.y, cmd.c.r, 0, 0};
     default:
-      return {cmd.type, 0, 0, 0, 0};
+      return {cmd.type, 0, 0, 0, 0, 0};
   }
 }
 
@@ -330,7 +331,8 @@ bool layoutChanged() {
     LayoutKey key = computeLayoutKey(drawList[i]);
     if (key.type != prevLayout[i].type ||
         key.x != prevLayout[i].x || key.y != prevLayout[i].y ||
-        key.w != prevLayout[i].w || key.h != prevLayout[i].h) {
+        key.w != prevLayout[i].w || key.h != prevLayout[i].h ||
+        key.fontId != prevLayout[i].fontId) {
       Serial.printf("layout: item %d changed type=%d x=%d,%d w=%d,%d vs x=%d,%d w=%d,%d\n",
         i, key.type, key.x, key.y, key.w, key.h,
         prevLayout[i].x, prevLayout[i].y, prevLayout[i].w, prevLayout[i].h);
