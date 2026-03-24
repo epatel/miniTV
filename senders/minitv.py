@@ -50,7 +50,7 @@ def _send_http(url, payload):
 def _send_mqtt(broker, port, topic, payload, username=None, password=None):
     """Send JSON payload to miniTV display via MQTT."""
     data = json.dumps(payload)
-    cmd = ["mosquitto_pub", "-h", broker, "-p", str(port), "-t", topic, "-s"]
+    cmd = ["mosquitto_pub", "-h", broker, "-p", str(port), "-t", topic, "-r", "-s"]
     if username:
         cmd += ["-u", username]
     if password:

@@ -4,7 +4,7 @@
 
 A tiny display server for the [GeekMagic SmallTV](https://github.com/GeekMagicClock) device — an ESP8266 (ESP-12F) with a 240x240 ST7789 TFT display.
 
-Send JSON over **HTTP** or **MQTT** to show text, progress bars, shapes, and lines on the screen.
+Send JSON over **HTTP** or **MQTT** to show text, progress bars, shapes, and lines on the screen. Includes 7 built-in fonts (FreeSans, FreeMono, FreeSerif at multiple sizes) for clean, proportional text rendering.
 
 ## Quick Start
 
@@ -26,7 +26,7 @@ Send JSON over **HTTP** or **MQTT** to show text, progress bars, shapes, and lin
      -H "Content-Type: application/json" -d '{
      "bg": "#000000",
      "items": [
-       {"type": "text", "x": 120, "y": 100, "text": "Hello!", "size": 3, "color": "#00FF00", "align": "center"}
+       {"type": "text", "x": 120, "y": 100, "text": "Hello!", "font": "sans-18", "color": "#00FF00", "align": "center"}
      ]
    }'
    ```
@@ -36,7 +36,7 @@ Send JSON over **HTTP** or **MQTT** to show text, progress bars, shapes, and lin
    mosquitto_pub -h broker.example.com -t /minitv/display -m '{
      "bg": "#000000",
      "items": [
-       {"type": "text", "x": 120, "y": 100, "text": "Hello!", "size": 3, "color": "#00FF00", "align": "center"}
+       {"type": "text", "x": 120, "y": 100, "text": "Hello!", "font": "sans-18", "color": "#00FF00", "align": "center"}
      ]
    }'
    ```
@@ -55,8 +55,8 @@ POST JSON to `/display` (HTTP) or publish to `/<device-name>/display` (MQTT):
 {
   "bg": "#001122",
   "items": [
-    {"type": "text", "x": 10, "y": 10, "text": "CPU", "size": 1, "color": "#888888"},
-    {"type": "text", "x": 230, "y": 10, "text": "62%", "size": 1, "color": "#FFFFFF", "align": "right", "maxWidth": "100%"},
+    {"type": "text", "x": 10, "y": 10, "text": "CPU", "font": "sans-9", "color": "#888888"},
+    {"type": "text", "x": 230, "y": 10, "text": "62%", "font": "sans-9", "color": "#FFFFFF", "align": "right", "maxWidth": "100%"},
     {"type": "progress", "x": 10, "y": 24, "w": 220, "h": 10, "value": 0.62, "color": "#4488FF", "bg": "#111122", "border": "#222244"},
     {"type": "rect", "x": 10, "y": 50, "w": 220, "h": 2, "color": "#333333", "fill": true},
     {"type": "line", "x1": 0, "y1": 0, "x2": 240, "y2": 240, "color": "#FF0000"},
@@ -67,13 +67,15 @@ POST JSON to `/display` (HTTP) or publish to `/<device-name>/display` (MQTT):
 
 **Item types:** `text`, `progress`, `rect`, `line`, `circle`
 
+**Available fonts:** `sans-9`, `sans-12`, `sans-18`, `mono-12`, `mono-18`, `serif-12`, `serif-18` — select per text item via the `font` field. Omit for the built-in 6x8 pixel font.
+
 See [API.md](API.md) for the full protocol reference.
 
 ## Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/` | Device info (IP, hostname, display size, uptime) |
+| GET | `/` | Device info (IP, hostname, display size, available fonts, uptime) |
 | POST | `/display` | Render items on display |
 | POST | `/reset-wifi` | Clear WiFi and MQTT credentials, reboot into setup AP |
 

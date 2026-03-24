@@ -13,7 +13,7 @@ On first boot (or after a WiFi reset), the device creates an AP called **"miniTV
 Returns device info as JSON.
 
 ```json
-{"ip":"192.168.68.128","display":{"width":240,"height":240},"uptime":42}
+{"ip":"192.168.68.128","hostname":"minitv","display":{"width":240,"height":240},"fonts":["sans-9","sans-12","sans-18","mono-12","mono-18","serif-12","serif-18"],"uptime":42}
 ```
 
 ### `POST /reset-wifi`
@@ -34,7 +34,7 @@ Renders items on the display. Send a JSON body with a background color and a lis
 {
   "bg": "#000000",
   "items": [
-    {"type": "text", "x": 120, "y": 10, "text": "Hello", "size": 2, "color": "#FFFFFF", "align": "center"}
+    {"type": "text", "x": 120, "y": 10, "text": "Hello", "font": "sans-18", "color": "#FFFFFF", "align": "center"}
   ]
 }
 ```
@@ -157,18 +157,19 @@ All colors are hex strings in `"#RRGGBB"` format. They are converted to 16-bit R
   -H "Content-Type: application/json" -d '{
   "bg": "#000000",
   "items": [
-    {"type": "text", "x": 120, "y": 60, "text": "Uploading...", "size": 2, "color": "#FFFFFF", "align": "center"},
-    {"type": "progress", "x": 20, "y": 110, "w": 200, "h": 24, "value": 0.42, "color": "#7F00FF", "bg": "#222222", "border": "#FFFFFF"},
-    {"type": "text", "x": 120, "y": 145, "text": "42%", "size": 2, "color": "#FFFFFF", "align": "center", "maxWidth": "100%"}
+    {"type": "text", "x": 120, "y": 55, "text": "Uploading...", "font": "sans-18", "color": "#FFFFFF", "align": "center", "maxWidth": "Uploading..."},
+    {"type": "progress", "x": 20, "y": 100, "w": 200, "h": 24, "value": 0.42, "color": "#7F00FF", "bg": "#222222", "border": "#FFFFFF"},
+    {"type": "text", "x": 120, "y": 135, "text": "42%", "font": "sans-12", "color": "#FFFFFF", "align": "center", "maxWidth": "100%"}
   ]
 }'
 ```
 
 ## Demo
 
-Run the included demo script to see all features:
+Run the included demo scripts to see all features:
 
 ```bash
-./demo.sh              # uses minitv.local
-./demo.sh 192.168.1.42 # or explicit IP
+./demo.sh                                          # HTTP, uses minitv.local
+./demo.sh 192.168.1.42                             # HTTP, explicit IP
+./demo-mqtt.sh minitv broker.example.com user pass  # MQTT
 ```
