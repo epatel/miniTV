@@ -217,9 +217,25 @@ void parseDrawList(JsonDocument& doc) {
       else cmd.t.align = ALIGN_LEFT;
       strncpy(cmd.t.text, item["text"] | "", MAX_TEXT_LEN - 1);
       cmd.t.text[MAX_TEXT_LEN - 1] = '\0';
+
+      // Font must be resolved before maxWidth measurement
+      cmd.t.fontId = lookupFontId(item["font"] | "");
+
       // maxWidth: sample string defining the fixed bounding width
       if (item["maxWidth"].is<const char*>()) {
-        cmd.t.fixedW = strlen(item["maxWidth"].as<const char*>()) * 6 * cmd.t.size;
+        const char* sample = item["maxWidth"].as<const char*>();
+        if (cmd.t.fontId > 0) {
+          // GFXfont: measure sample string with actual font
+          const GFXfont* font = getFontPtr(cmd.t.fontId);
+          tft.setFont(font);
+          int16_t x1, y1;
+          uint16_t sw, sh;
+          tft.getTextBounds(sample, 0, 0, &x1, &y1, &sw, &sh);
+          cmd.t.fixedW = sw;
+          tft.setFont(NULL);
+        } else {
+          cmd.t.fixedW = strlen(sample) * 6 * cmd.t.size;
+        }
       } else {
         cmd.t.fixedW = 0;
       }
