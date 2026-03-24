@@ -430,9 +430,17 @@ void renderDrawList() {
 
         const GFXfont* font = getFontPtr(cmd.t.fontId);
 
-        if (tw > 0 && th > 0 && tw <= 240 && (uint32_t)tw * th * 2 <= 4096) {
+        // For GFXfonts with center/right align, cursor offset shifts text right
+        // in the canvas — widen canvas to prevent clipping rightmost glyphs
+        uint16_t canvasW = tw;
+        int16_t canvasCursorX = cursorX - cx;
+        if (cmd.t.fontId > 0 && canvasCursorX > 0) {
+          canvasW += canvasCursorX;
+        }
+
+        if (canvasW > 0 && th > 0 && canvasW <= 240 && (uint32_t)canvasW * th * 2 <= 4096) {
           // Render to off-screen canvas, then blit in one SPI burst
-          GFXcanvas16 canvas(tw, th);
+          GFXcanvas16 canvas(canvasW, th);
           canvas.fillScreen(bgColor);
           canvas.setFont(font);
           if (cmd.t.fontId > 0) {
@@ -442,15 +450,14 @@ void renderDrawList() {
           }
           canvas.setTextColor(cmd.color);
           // Canvas cursor: offset from box origin
-          int16_t canvasCursorX = cursorX - cx;
           int16_t canvasCursorY = cursorY - cy;
           canvas.setCursor(canvasCursorX, canvasCursorY);
           canvas.print(cmd.t.text);
-          tft.drawRGBBitmap(cx, cy, canvas.getBuffer(), tw, th);
+          tft.drawRGBBitmap(cx, cy, canvas.getBuffer(), canvasW, th);
         } else {
           // Too large for canvas — direct draw with background clear
           // Note: GFXfonts don't support bg color in setTextColor, so fillRect first
-          tft.fillRect(cx, cy, tw, th, bgColor);
+          tft.fillRect(cx, cy, canvasW, th, bgColor);
           tft.setFont(font);
           if (cmd.t.fontId > 0) {
             tft.setTextSize(1);
