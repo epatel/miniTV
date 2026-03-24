@@ -278,9 +278,23 @@ void parseDrawList(JsonDocument& doc) {
 // Built-in font: 6px wide, 8px tall per char at size 1.
 // This keeps bounding box stable when text content changes (e.g. "49%" -> "50%").
 void getTextPos(DrawCmd& cmd, int16_t &cx, int16_t &cy, uint16_t &tw, uint16_t &th) {
-  uint16_t textW = strlen(cmd.t.text) * 6 * cmd.t.size;
-  tw = cmd.t.fixedW > 0 ? cmd.t.fixedW : textW;
-  th = 8 * cmd.t.size;
+  if (cmd.t.fontId > 0) {
+    // GFXfont: use getTextBounds for width, yAdvance for stable height
+    const GFXfont* font = getFontPtr(cmd.t.fontId);
+    tft.setFont(font);
+    int16_t x1, y1;
+    uint16_t textW, textH;
+    tft.getTextBounds(cmd.t.text, 0, 0, &x1, &y1, &textW, &textH);
+    tw = cmd.t.fixedW > 0 ? cmd.t.fixedW : textW;
+    th = font->yAdvance;  // stable height regardless of glyph content
+    tft.setFont(NULL);
+  } else {
+    // Built-in font: fixed 6x8 per char at size 1
+    uint16_t textW = strlen(cmd.t.text) * 6 * cmd.t.size;
+    tw = cmd.t.fixedW > 0 ? cmd.t.fixedW : textW;
+    th = 8 * cmd.t.size;
+  }
+
   if (cmd.t.align == ALIGN_RIGHT) {
     cx = cmd.x - (int)tw;
   } else if (cmd.t.align == ALIGN_CENTER) {
@@ -292,14 +306,36 @@ void getTextPos(DrawCmd& cmd, int16_t &cx, int16_t &cy, uint16_t &tw, uint16_t &
 }
 
 // Get cursor position for text within its fixed-width box
-void getTextCursor(DrawCmd& cmd, int16_t boxX, uint16_t boxW, int16_t &cursorX) {
-  uint16_t textW = strlen(cmd.t.text) * 6 * cmd.t.size;
-  if (cmd.t.align == ALIGN_RIGHT) {
-    cursorX = boxX + (int)boxW - (int)textW;
-  } else if (cmd.t.align == ALIGN_CENTER) {
-    cursorX = boxX + ((int)boxW - (int)textW) / 2;
+void getTextCursor(DrawCmd& cmd, int16_t boxX, uint16_t boxW, int16_t &cursorX, int16_t &cursorY) {
+  if (cmd.t.fontId > 0) {
+    // GFXfont: measure actual text width for alignment within box
+    const GFXfont* font = getFontPtr(cmd.t.fontId);
+    tft.setFont(font);
+    int16_t x1, y1;
+    uint16_t textW, textH;
+    tft.getTextBounds(cmd.t.text, 0, 0, &x1, &y1, &textW, &textH);
+    if (cmd.t.align == ALIGN_RIGHT) {
+      cursorX = boxX + (int)boxW - (int)textW;
+    } else if (cmd.t.align == ALIGN_CENTER) {
+      cursorX = boxX + ((int)boxW - (int)textW) / 2;
+    } else {
+      cursorX = boxX;
+    }
+    // Baseline correction: y1 is negative offset from baseline to top
+    // cmd.y is desired top, so cursor_y (baseline) = cmd.y - y1
+    cursorY = cmd.y - y1;
+    tft.setFont(NULL);
   } else {
-    cursorX = boxX;
+    // Built-in font: fixed-width math
+    uint16_t textW = strlen(cmd.t.text) * 6 * cmd.t.size;
+    if (cmd.t.align == ALIGN_RIGHT) {
+      cursorX = boxX + (int)boxW - (int)textW;
+    } else if (cmd.t.align == ALIGN_CENTER) {
+      cursorX = boxX + ((int)boxW - (int)textW) / 2;
+    } else {
+      cursorX = boxX;
+    }
+    cursorY = cmd.y;
   }
 }
 
@@ -368,24 +404,45 @@ void renderDrawList() {
         uint16_t tw, th;
         getTextPos(cmd, cx, cy, tw, th);
         // Cursor within the (possibly fixed-width) box
-        int16_t cursorX;
-        getTextCursor(cmd, cx, tw, cursorX);
-        int16_t textCursorInCanvas = cursorX - cx;
+        int16_t cursorX, cursorY;
+        getTextCursor(cmd, cx, tw, cursorX, cursorY);
+
+        const GFXfont* font = getFontPtr(cmd.t.fontId);
+
         if (tw > 0 && th > 0 && tw <= 240 && (uint32_t)tw * th * 2 <= 4096) {
           // Render to off-screen canvas, then blit in one SPI burst
           GFXcanvas16 canvas(tw, th);
           canvas.fillScreen(bgColor);
-          canvas.setTextSize(cmd.t.size);
+          canvas.setFont(font);
+          if (cmd.t.fontId > 0) {
+            canvas.setTextSize(1);
+          } else {
+            canvas.setTextSize(cmd.t.size);
+          }
           canvas.setTextColor(cmd.color);
-          canvas.setCursor(textCursorInCanvas, 0);
+          // Canvas cursor: offset from box origin
+          int16_t canvasCursorX = cursorX - cx;
+          int16_t canvasCursorY = cursorY - cy;
+          canvas.setCursor(canvasCursorX, canvasCursorY);
           canvas.print(cmd.t.text);
           tft.drawRGBBitmap(cx, cy, canvas.getBuffer(), tw, th);
         } else {
-          tft.setTextSize(cmd.t.size);
-          tft.setTextColor(cmd.color, bgColor);
-          tft.setCursor(cursorX, cy);
+          // Too large for canvas — direct draw with background clear
+          // Note: GFXfonts don't support bg color in setTextColor, so fillRect first
+          tft.fillRect(cx, cy, tw, th, bgColor);
+          tft.setFont(font);
+          if (cmd.t.fontId > 0) {
+            tft.setTextSize(1);
+            tft.setTextColor(cmd.color);
+          } else {
+            tft.setTextSize(cmd.t.size);
+            tft.setTextColor(cmd.color, bgColor);
+          }
+          tft.setCursor(cursorX, cursorY);
           tft.print(cmd.t.text);
         }
+        // Reset font to built-in for any subsequent non-text drawing
+        tft.setFont(NULL);
         break;
       }
       case CMD_PROGRESS: {
