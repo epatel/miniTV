@@ -596,6 +596,14 @@ void handleGet() {
   json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
   json += "\"hostname\":\"" + String(hostname) + "\",";
   json += "\"display\":{\"width\":240,\"height\":240},";
+  json += "\"fonts\":[";
+  for (uint8_t i = 0; i < FONT_COUNT; i++) {
+    if (i > 0) json += ",";
+    json += "\"";
+    json += fontTable[i].name;
+    json += "\"";
+  }
+  json += "],";
   json += "\"uptime\":" + String(millis() / 1000);
   json += "}";
   server.send(200, "application/json", json);
