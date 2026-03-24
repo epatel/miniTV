@@ -59,7 +59,7 @@ def sensor_items_single(data, label):
     if not data:
         return [
             {"type": "text", "x": 120, "y": 100, "text": "No sensor data",
-             "size": 2, "color": "#888888", "align": "center"},
+             "font": "sans-12", "color": "#888888", "align": "center"},
         ]
 
     diameter = data.get("diameter", 0)
@@ -73,39 +73,39 @@ def sensor_items_single(data, label):
     bar_val = max(0, min(1, (diameter - 1.5) / 0.5))
 
     return [
-        {"type": "text", "x": 120, "y": 38, "text": f"{diameter:.3f}", "size": 4,
+        {"type": "text", "x": 120, "y": 35, "text": f"{diameter:.3f}", "font": "mono-18",
          "color": color, "align": "center", "maxWidth": "0.000"},
-        {"type": "text", "x": 120, "y": 75, "text": "mm", "size": 2,
+        {"type": "text", "x": 120, "y": 68, "text": "mm", "font": "sans-12",
          "color": "#888888", "align": "center"},
-        {"type": "text", "x": 120, "y": 98, "text": f"{dev_sign}{deviation:.3f}",
-         "size": 2, "color": color, "align": "center", "maxWidth": "+0.000"},
+        {"type": "text", "x": 120, "y": 92, "text": f"{dev_sign}{deviation:.3f}",
+         "font": "mono-12", "color": color, "align": "center", "maxWidth": "+0.000"},
 
-        {"type": "progress", "x": 14, "y": 120, "w": 212, "h": 8,
+        {"type": "progress", "x": 14, "y": 116, "w": 212, "h": 8,
          "value": bar_val, "color": color, "bg": "#282832", "border": "#282832"},
-        {"type": "text", "x": 14, "y": 131, "text": "1.50", "size": 1, "color": "#4A4A52"},
-        {"type": "text", "x": 120, "y": 131, "text": "1.75", "size": 1,
+        {"type": "text", "x": 14, "y": 128, "text": "1.50", "font": "sans-9", "color": "#4A4A52"},
+        {"type": "text", "x": 120, "y": 128, "text": "1.75", "font": "sans-9",
          "color": "#4A4A52", "align": "center"},
-        {"type": "text", "x": 226, "y": 131, "text": "2.00", "size": 1,
+        {"type": "text", "x": 226, "y": 128, "text": "2.00", "font": "sans-9",
          "color": "#4A4A52", "align": "right"},
 
-        {"type": "rect", "x": 8, "y": 146, "w": 110, "h": 34, "color": "#16161E", "fill": True},
-        {"type": "text", "x": 14, "y": 149, "text": "Min", "size": 1, "color": "#717178"},
-        {"type": "text", "x": 14, "y": 162, "text": f"{d_min:.3f}", "size": 1,
+        {"type": "rect", "x": 8, "y": 146, "w": 110, "h": 36, "color": "#16161E", "fill": True},
+        {"type": "text", "x": 14, "y": 148, "text": "Min", "font": "sans-9", "color": "#717178"},
+        {"type": "text", "x": 14, "y": 164, "text": f"{d_min:.3f}", "font": "mono-12",
          "color": diameter_color(d_min), "maxWidth": "0.000"},
 
-        {"type": "rect", "x": 122, "y": 146, "w": 110, "h": 34, "color": "#16161E", "fill": True},
-        {"type": "text", "x": 128, "y": 149, "text": "Max", "size": 1, "color": "#717178"},
-        {"type": "text", "x": 128, "y": 162, "text": f"{d_max:.3f}", "size": 1,
+        {"type": "rect", "x": 122, "y": 146, "w": 110, "h": 36, "color": "#16161E", "fill": True},
+        {"type": "text", "x": 128, "y": 148, "text": "Max", "font": "sans-9", "color": "#717178"},
+        {"type": "text", "x": 128, "y": 164, "text": f"{d_max:.3f}", "font": "mono-12",
          "color": diameter_color(d_max), "maxWidth": "0.000"},
 
-        {"type": "rect", "x": 8, "y": 184, "w": 110, "h": 34, "color": "#16161E", "fill": True},
-        {"type": "text", "x": 14, "y": 187, "text": "Average", "size": 1, "color": "#717178"},
-        {"type": "text", "x": 14, "y": 200, "text": f"{d_avg:.3f}", "size": 1,
+        {"type": "rect", "x": 8, "y": 186, "w": 110, "h": 36, "color": "#16161E", "fill": True},
+        {"type": "text", "x": 14, "y": 188, "text": "Average", "font": "sans-9", "color": "#717178"},
+        {"type": "text", "x": 14, "y": 204, "text": f"{d_avg:.3f}", "font": "mono-12",
          "color": diameter_color(d_avg), "maxWidth": "0.000"},
 
-        {"type": "rect", "x": 122, "y": 184, "w": 110, "h": 34, "color": "#16161E", "fill": True},
-        {"type": "text", "x": 128, "y": 187, "text": "Samples", "size": 1, "color": "#717178"},
-        {"type": "text", "x": 128, "y": 200, "text": str(count), "size": 1,
+        {"type": "rect", "x": 122, "y": 186, "w": 110, "h": 36, "color": "#16161E", "fill": True},
+        {"type": "text", "x": 128, "y": 188, "text": "Samples", "font": "sans-9", "color": "#717178"},
+        {"type": "text", "x": 128, "y": 204, "text": str(count), "font": "sans-9",
          "color": "#F0F0F5", "maxWidth": "000000"},
     ]
 
@@ -115,7 +115,7 @@ def sensor_items_dual(data, label, y_off):
     if not data:
         return [
             {"type": "text", "x": 120, "y": y_off + 40, "text": "No data",
-             "size": 1, "color": "#666666", "align": "center"},
+             "font": "sans-9", "color": "#666666", "align": "center"},
         ]
 
     diameter = data.get("diameter", 0)
@@ -130,27 +130,27 @@ def sensor_items_dual(data, label, y_off):
     items = [
         # Label
         {"type": "rect", "x": 0, "y": y_off, "w": 240, "h": 18, "color": "#16162A", "fill": True},
-        {"type": "text", "x": 120, "y": y_off + 3, "text": label, "size": 1,
+        {"type": "text", "x": 120, "y": y_off + 2, "text": label, "font": "sans-9",
          "color": "#6CB4EE", "align": "center"},
 
         # Big reading + deviation
-        {"type": "text", "x": 80, "y": y_off + 22, "text": f"{diameter:.3f}", "size": 3,
+        {"type": "text", "x": 80, "y": y_off + 22, "text": f"{diameter:.3f}", "font": "mono-18",
          "color": color, "align": "center", "maxWidth": "0.000"},
-        {"type": "text", "x": 80, "y": y_off + 48, "text": "mm", "size": 1,
+        {"type": "text", "x": 80, "y": y_off + 50, "text": "mm", "font": "sans-9",
          "color": "#888888", "align": "center"},
         {"type": "text", "x": 190, "y": y_off + 26, "text": f"{dev_sign}{deviation:.3f}",
-         "size": 2, "color": color, "align": "center", "maxWidth": "+0.000"},
+         "font": "mono-12", "color": color, "align": "center", "maxWidth": "+0.000"},
 
         # Bar
-        {"type": "progress", "x": 14, "y": y_off + 60, "w": 212, "h": 6,
+        {"type": "progress", "x": 14, "y": y_off + 62, "w": 212, "h": 6,
          "value": bar_val, "color": color, "bg": "#282832", "border": "#282832"},
 
         # Min / Avg / Max in a row
-        {"type": "text", "x": 14, "y": y_off + 72, "text": f"Min:{d_min:.3f}", "size": 1,
+        {"type": "text", "x": 14, "y": y_off + 72, "text": f"Min:{d_min:.3f}", "font": "sans-9",
          "color": diameter_color(d_min), "maxWidth": "Min:0.000"},
-        {"type": "text", "x": 120, "y": y_off + 72, "text": f"Avg:{d_avg:.3f}", "size": 1,
+        {"type": "text", "x": 120, "y": y_off + 72, "text": f"Avg:{d_avg:.3f}", "font": "sans-9",
          "color": diameter_color(d_avg), "align": "center", "maxWidth": "Avg:0.000"},
-        {"type": "text", "x": 226, "y": y_off + 72, "text": f"Max:{d_max:.3f}", "size": 1,
+        {"type": "text", "x": 226, "y": y_off + 72, "text": f"Max:{d_max:.3f}", "font": "sans-9",
          "color": diameter_color(d_max), "align": "right", "maxWidth": "Max:0.000"},
     ]
     return items
@@ -161,7 +161,7 @@ def build_display(readings, labels):
     items = [
         # Header
         {"type": "rect", "x": 0, "y": 0, "w": 240, "h": 26, "color": "#1A1A2A", "fill": True},
-        {"type": "text", "x": 120, "y": 5, "text": "WINFIDEL", "size": 2,
+        {"type": "text", "x": 120, "y": 3, "text": "WINFIDEL", "font": "sans-12",
          "color": "#6CB4EE", "align": "center"},
     ]
 
@@ -175,7 +175,7 @@ def build_display(readings, labels):
 
     # Timestamp
     items.append({"type": "text", "x": 120, "y": 226, "text": datetime.now().strftime("%H:%M:%S"),
-                  "size": 1, "color": "#4A4A52", "align": "center", "maxWidth": "00:00:00"})
+                  "font": "sans-9", "color": "#4A4A52", "align": "center", "maxWidth": "00:00:00"})
 
     return {"bg": "#0C0C10", "items": items}
 

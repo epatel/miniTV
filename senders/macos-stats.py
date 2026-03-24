@@ -140,53 +140,53 @@ def main(display):
 
         items = [
             # Header
-            {"type": "rect", "x": 0, "y": 0, "w": 240, "h": 28, "color": "#1A1A3A", "fill": True},
-            {"type": "text", "x": 120, "y": 6, "text": "SYSTEM", "size": 2, "color": "#4488FF", "align": "center"},
+            {"type": "rect", "x": 0, "y": 0, "w": 240, "h": 30, "color": "#1A1A3A", "fill": True},
+            {"type": "text", "x": 120, "y": 2, "text": "SYSTEM", "font": "sans-18", "color": "#4488FF", "align": "center"},
 
             # CPU
-            {"type": "text", "x": 10, "y": 38, "text": "CPU", "size": 1, "color": "#888888"},
-            {"type": "text", "x": 230, "y": 38, "text": f"{cpu*100:.0f}%", "size": 1, "color": "#FFFFFF",
+            {"type": "text", "x": 10, "y": 36, "text": "CPU", "font": "sans-9", "color": "#888888"},
+            {"type": "text", "x": 230, "y": 36, "text": f"{cpu*100:.0f}%", "font": "sans-9", "color": "#FFFFFF",
              "align": "right", "maxWidth": "100%"},
-            {"type": "progress", "x": 10, "y": 50, "w": 220, "h": 10,
+            {"type": "progress", "x": 10, "y": 52, "w": 220, "h": 10,
              "value": cpu, "color": bar_color(cpu), "bg": "#111122", "border": "#222244"},
 
             # Memory
-            {"type": "text", "x": 10, "y": 68, "text": "MEM", "size": 1, "color": "#888888"},
-            {"type": "text", "x": 230, "y": 68, "text": f"{mem_ratio*100:.0f}%", "size": 1, "color": "#FFFFFF",
+            {"type": "text", "x": 10, "y": 70, "text": "MEM", "font": "sans-9", "color": "#888888"},
+            {"type": "text", "x": 230, "y": 70, "text": f"{mem_ratio*100:.0f}%", "font": "sans-9", "color": "#FFFFFF",
              "align": "right", "maxWidth": "100%"},
-            {"type": "progress", "x": 10, "y": 80, "w": 220, "h": 10,
+            {"type": "progress", "x": 10, "y": 86, "w": 220, "h": 10,
              "value": mem_ratio, "color": bar_color(mem_ratio), "bg": "#111122", "border": "#222244"},
 
             # Separator
-            {"type": "line", "x1": 10, "y1": 100, "x2": 230, "y2": 100, "color": "#222244"},
+            {"type": "line", "x1": 10, "y1": 104, "x2": 230, "y2": 104, "color": "#222244"},
         ]
 
         # Stats section
-        y = 110
+        y = 112
         if has_temp and temp is not None:
             temp_color = "#FF4466" if temp > 80 else "#FFAA00" if temp > 60 else "#44CC88"
-            items.append({"type": "text", "x": 10, "y": y, "text": "Temp:", "size": 1, "color": "#888888"})
-            items.append({"type": "text", "x": 120, "y": y, "text": f"{temp:.0f}C", "size": 1, "color": temp_color,
+            items.append({"type": "text", "x": 10, "y": y, "text": "Temp:", "font": "sans-9", "color": "#888888"})
+            items.append({"type": "text", "x": 120, "y": y, "text": f"{temp:.0f}C", "font": "sans-9", "color": temp_color,
                           "maxWidth": "000C"})
-            y += 16
+            y += 18
 
-        items.append({"type": "text", "x": 10, "y": y, "text": "Mem:", "size": 1, "color": "#888888"})
+        items.append({"type": "text", "x": 10, "y": y, "text": "Mem:", "font": "sans-9", "color": "#888888"})
         items.append({"type": "text", "x": 120, "y": y,
-                      "text": f"{format_bytes(mem_used)}/{format_bytes(mem_total)}", "size": 1, "color": "#4488FF",
+                      "text": f"{format_bytes(mem_used)}/{format_bytes(mem_total)}", "font": "sans-9", "color": "#4488FF",
                       "maxWidth": "00.0G/00.0G"})
-        y += 16
+        y += 18
 
         # Network
         items.append({"type": "line", "x1": 10, "y1": y, "x2": 230, "y2": y, "color": "#222244"})
         y += 8
-        items.append({"type": "text", "x": 10, "y": y, "text": "NET", "size": 1, "color": "#888888"})
-        y += 14
-        items.append({"type": "text", "x": 10, "y": y, "text": "In:", "size": 1, "color": "#888888"})
-        items.append({"type": "text", "x": 120, "y": y, "text": f"{format_bytes(rate_in)}/s", "size": 1,
+        items.append({"type": "text", "x": 10, "y": y, "text": "NET", "font": "sans-9", "color": "#888888"})
+        y += 18
+        items.append({"type": "text", "x": 10, "y": y, "text": "In:", "font": "sans-9", "color": "#888888"})
+        items.append({"type": "text", "x": 120, "y": y, "text": f"{format_bytes(rate_in)}/s", "font": "sans-9",
                       "color": "#44CC88", "maxWidth": "000.0M/s"})
-        y += 14
-        items.append({"type": "text", "x": 10, "y": y, "text": "Out:", "size": 1, "color": "#888888"})
-        items.append({"type": "text", "x": 120, "y": y, "text": f"{format_bytes(rate_out)}/s", "size": 1,
+        y += 18
+        items.append({"type": "text", "x": 10, "y": y, "text": "Out:", "font": "sans-9", "color": "#888888"})
+        items.append({"type": "text", "x": 120, "y": y, "text": f"{format_bytes(rate_out)}/s", "font": "sans-9",
                       "color": "#FF8844", "maxWidth": "000.0M/s"})
 
         payload = {"bg": "#0A0A1A", "items": items}

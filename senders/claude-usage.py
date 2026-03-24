@@ -166,7 +166,7 @@ def build_display(usage, plan):
             "bg": "#0C0C10",
             "items": [
                 {"type": "text", "x": 120, "y": 110, "text": "No usage data",
-                 "size": 2, "color": "#888888", "align": "center"}
+                 "font": "sans-12", "color": "#888888", "align": "center"}
             ]
         }
 
@@ -178,58 +178,58 @@ def build_display(usage, plan):
 
     items = [
         # Header
-        {"type": "rect", "x": 0, "y": 0, "w": 240, "h": 26, "color": "#16162A", "fill": True},
-        {"type": "text", "x": 120, "y": 5, "text": f"CLAUDE {plan.upper()}", "size": 2,
+        {"type": "rect", "x": 0, "y": 0, "w": 240, "h": 28, "color": "#16162A", "fill": True},
+        {"type": "text", "x": 120, "y": 3, "text": f"CLAUDE {plan.upper()}", "font": "sans-12",
          "color": "#D4A574", "align": "center"},
 
         # Tokens section
-        {"type": "rect", "x": 8, "y": 32, "w": 224, "h": 48, "color": "#16161E", "fill": True},
-        {"type": "text", "x": 14, "y": 35, "text": "TOKENS", "size": 1, "color": "#717178"},
-        {"type": "text", "x": 226, "y": 35, "text": f"{tk_pct:.0f}%", "size": 1,
+        {"type": "rect", "x": 8, "y": 34, "w": 224, "h": 50, "color": "#16161E", "fill": True},
+        {"type": "text", "x": 14, "y": 36, "text": "TOKENS", "font": "sans-9", "color": "#717178"},
+        {"type": "text", "x": 226, "y": 36, "text": f"{tk_pct:.0f}%", "font": "sans-9",
          "color": tk_color, "align": "right", "maxWidth": "100%"},
-        {"type": "progress", "x": 14, "y": 48, "w": 212, "h": 8,
+        {"type": "progress", "x": 14, "y": 52, "w": 212, "h": 8,
          "value": min(tk_pct / 100, 1.0), "color": tk_color, "bg": "#282832", "border": "#282832"},
-        {"type": "text", "x": 14, "y": 60, "text": f"{format_k(usage['tokens_used'])}/{format_k(usage['tokens_limit'])}",
-         "size": 1, "color": "#A1A1AA", "maxWidth": "000.0K/000.0K"},
+        {"type": "text", "x": 14, "y": 64, "text": f"{format_k(usage['tokens_used'])}/{format_k(usage['tokens_limit'])}",
+         "font": "sans-9", "color": "#A1A1AA", "maxWidth": "000.0K/000.0K"},
 
         # Messages section
-        {"type": "rect", "x": 8, "y": 86, "w": 224, "h": 48, "color": "#16161E", "fill": True},
-        {"type": "text", "x": 14, "y": 89, "text": "MESSAGES", "size": 1, "color": "#717178"},
-        {"type": "text", "x": 226, "y": 89, "text": f"{msg_pct:.0f}%", "size": 1,
+        {"type": "rect", "x": 8, "y": 90, "w": 224, "h": 50, "color": "#16161E", "fill": True},
+        {"type": "text", "x": 14, "y": 92, "text": "MESSAGES", "font": "sans-9", "color": "#717178"},
+        {"type": "text", "x": 226, "y": 92, "text": f"{msg_pct:.0f}%", "font": "sans-9",
          "color": msg_color, "align": "right", "maxWidth": "100%"},
-        {"type": "progress", "x": 14, "y": 102, "w": 212, "h": 8,
+        {"type": "progress", "x": 14, "y": 108, "w": 212, "h": 8,
          "value": min(msg_pct / 100, 1.0), "color": msg_color, "bg": "#282832", "border": "#282832"},
-        {"type": "text", "x": 14, "y": 114, "text": f"{usage['messages_used']}/{usage['messages_limit']}",
-         "size": 1, "color": "#A1A1AA", "maxWidth": "0000/0000"},
+        {"type": "text", "x": 14, "y": 120, "text": f"{usage['messages_used']}/{usage['messages_limit']}",
+         "font": "sans-9", "color": "#A1A1AA", "maxWidth": "0000/0000"},
 
         # Info grid - 2x2
         # Sessions
-        {"type": "rect", "x": 8, "y": 140, "w": 110, "h": 34, "color": "#16161E", "fill": True},
-        {"type": "text", "x": 14, "y": 143, "text": "Sessions", "size": 1, "color": "#717178"},
-        {"type": "text", "x": 14, "y": 156, "text": str(usage["sessions"]), "size": 1,
+        {"type": "rect", "x": 8, "y": 146, "w": 110, "h": 36, "color": "#16161E", "fill": True},
+        {"type": "text", "x": 14, "y": 148, "text": "Sessions", "font": "sans-9", "color": "#717178"},
+        {"type": "text", "x": 14, "y": 164, "text": str(usage["sessions"]), "font": "sans-9",
          "color": "#F0F0F5", "maxWidth": "000"},
 
         # Model
-        {"type": "rect", "x": 122, "y": 140, "w": 110, "h": 34, "color": "#16161E", "fill": True},
-        {"type": "text", "x": 128, "y": 143, "text": "Model", "size": 1, "color": "#717178"},
-        {"type": "text", "x": 128, "y": 156, "text": model_short, "size": 1,
+        {"type": "rect", "x": 122, "y": 146, "w": 110, "h": 36, "color": "#16161E", "fill": True},
+        {"type": "text", "x": 128, "y": 148, "text": "Model", "font": "sans-9", "color": "#717178"},
+        {"type": "text", "x": 128, "y": 164, "text": model_short, "font": "sans-9",
          "color": "#F0F0F5", "maxWidth": "opus-4-6[1m]"},
 
         # Reset
-        {"type": "rect", "x": 8, "y": 178, "w": 110, "h": 34, "color": "#16161E", "fill": True},
-        {"type": "text", "x": 14, "y": 181, "text": "Resets in", "size": 1, "color": "#717178"},
-        {"type": "text", "x": 14, "y": 194, "text": format_duration(usage["reset_min"]), "size": 1,
+        {"type": "rect", "x": 8, "y": 186, "w": 110, "h": 36, "color": "#16161E", "fill": True},
+        {"type": "text", "x": 14, "y": 188, "text": "Resets in", "font": "sans-9", "color": "#717178"},
+        {"type": "text", "x": 14, "y": 204, "text": format_duration(usage["reset_min"]), "font": "sans-9",
          "color": "#F0F0F5", "maxWidth": "00h 00m"},
 
         # Cache
-        {"type": "rect", "x": 122, "y": 178, "w": 110, "h": 34, "color": "#16161E", "fill": True},
-        {"type": "text", "x": 128, "y": 181, "text": "Cache", "size": 1, "color": "#717178"},
-        {"type": "text", "x": 128, "y": 194, "text": f"{usage['cache_pct']:.0f}%", "size": 1,
+        {"type": "rect", "x": 122, "y": 186, "w": 110, "h": 36, "color": "#16161E", "fill": True},
+        {"type": "text", "x": 128, "y": 188, "text": "Cache", "font": "sans-9", "color": "#717178"},
+        {"type": "text", "x": 128, "y": 204, "text": f"{usage['cache_pct']:.0f}%", "font": "sans-9",
          "color": "#F0F0F5", "maxWidth": "100%"},
 
         # Timestamp
-        {"type": "text", "x": 120, "y": 222, "text": datetime.now().strftime("%H:%M:%S"),
-         "size": 1, "color": "#4A4A52", "align": "center", "maxWidth": "00:00:00"},
+        {"type": "text", "x": 120, "y": 226, "text": datetime.now().strftime("%H:%M:%S"),
+         "font": "sans-9", "color": "#4A4A52", "align": "center", "maxWidth": "00:00:00"},
     ]
 
     return {"bg": "#0C0C10", "items": items}
