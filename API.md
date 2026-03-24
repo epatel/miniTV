@@ -60,6 +60,7 @@ Draws a text string.
 | `y` | int | `0` | Y position (top of text) |
 | `text` | string | `""` | Text content (max 31 chars) |
 | `size` | int | `1` | Font scale (1=6x8px per char, 2=12x16, 3=18x24, ...) |
+| `font` | string | — | Font name (e.g. `"sans-12"`, `"mono-18"`). Omit for built-in 6x8 font. When set, `size` is ignored. |
 | `color` | string | `"#FFFFFF"` | Text color |
 | `align` | string | `"left"` | `"left"`, `"center"`, or `"right"` — determines how `x` is used |
 | `maxWidth` | string | — | Sample string defining fixed bounding width (e.g. `"100%"` for a percentage that changes). Prevents layout recalculation when text content changes. |
@@ -120,6 +121,22 @@ Draws a circle (filled or outline).
 | `r` | int | `10` | Radius |
 | `color` | string | `"#FFFFFF"` | Color |
 | `fill` | bool | `false` | Fill the circle |
+
+## Available fonts
+
+Custom fonts are selected per text item via the `font` field. When omitted, the built-in 6x8 monospaced font is used with the `size` multiplier.
+
+| Name | Family | Size | Approx Height |
+|------|--------|------|---------------|
+| `sans-9` | FreeSans | 9pt | ~13px |
+| `sans-12` | FreeSans | 12pt | ~17px |
+| `sans-18` | FreeSans | 18pt | ~25px |
+| `mono-12` | FreeMono | 12pt | ~17px |
+| `mono-18` | FreeMono | 18pt | ~25px |
+| `serif-12` | FreeSerif | 12pt | ~17px |
+| `serif-18` | FreeSerif | 18pt | ~25px |
+
+Query `GET /` for the `"fonts"` array to discover available fonts at runtime.
 
 ## Colors
 
