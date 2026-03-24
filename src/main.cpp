@@ -298,11 +298,15 @@ void getTextPos(DrawCmd& cmd, int16_t &cx, int16_t &cy, uint16_t &tw, uint16_t &
     // GFXfont: use getTextBounds for width, yAdvance for stable height
     const GFXfont* font = getFontPtr(cmd.t.fontId);
     tft.setFont(font);
+    tft.setTextSize(1);
     int16_t x1, y1;
     uint16_t textW, textH;
     tft.getTextBounds(cmd.t.text, 0, 0, &x1, &y1, &textW, &textH);
-    tw = cmd.t.fixedW > 0 ? cmd.t.fixedW : textW;
-    th = font->yAdvance;  // stable height regardless of glyph content
+    // Canvas renders from cursor 0, but bounding box starts at x1 offset
+    // Need x1 + textW total width to avoid clipping rightmost glyphs
+    uint16_t fullW = (x1 > 0) ? (uint16_t)(x1 + textW) : textW;
+    tw = cmd.t.fixedW > 0 ? cmd.t.fixedW : fullW;
+    th = pgm_read_byte(&font->yAdvance);  // PROGMEM: stable height regardless of glyph content
     tft.setFont(NULL);
   } else {
     // Built-in font: fixed 6x8 per char at size 1
@@ -327,6 +331,7 @@ void getTextCursor(DrawCmd& cmd, int16_t boxX, uint16_t boxW, int16_t &cursorX, 
     // GFXfont: measure actual text width for alignment within box
     const GFXfont* font = getFontPtr(cmd.t.fontId);
     tft.setFont(font);
+    tft.setTextSize(1);
     int16_t x1, y1;
     uint16_t textW, textH;
     tft.getTextBounds(cmd.t.text, 0, 0, &x1, &y1, &textW, &textH);
